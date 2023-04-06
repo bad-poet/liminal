@@ -23,8 +23,8 @@ class Liminal {
     id: number;
     author: number;
     name: string;
-    video: string;
-    audio: string;
+    video_id: number;
+    audio_id: number;
     description: string;
 }
 
@@ -51,6 +51,18 @@ class Replies {
     author: number;
     comment: number;
     content: string;
+}
+
+class Blog {
+    id: number;
+    title: string;
+    content: string;
+    user: number;
+}
+
+class BlogImage {
+    blog: number;
+    loc: string;
 }
 
 class Friendship {
@@ -164,6 +176,8 @@ app.post('/accept', (req, res) => {
         res.sendStatus(200);
     })
 })
+
+app.get('')
 
 app.get('/liminals', (req, res) => {
     db.all<Liminal>(`SELECT * FROM Content`, [], (error, rows) => {

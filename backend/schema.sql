@@ -14,8 +14,8 @@ CREATE TABLE Content(
     id INTEGER NOT NULL PRIMARY KEY,
     author INTEGER NOT NULL REFERENCES Makers(id),
     name TEXT NOT NULL,
-    video TEXT NULL,
-    audio TEXT NOT NULL,
+    video_id INTEGER NULL,
+    audio_id INTEGER NOT NULL,
     description TEXT NOT NULL
 );
 --CREATE TABLE `Files`(`id` TEXT NOT NULL PRIMARY KEY);
@@ -29,8 +29,11 @@ CREATE TABLE Blogs(
     id INTEGER NOT NULL PRIMARY KEY,
     title TEXT NOT NULL,
     content TEXT NOT NULL,
-    images TEXT NOT NULL,
     user INTEGER NOT NULL REFERENCES Users(id)
+);
+CREATE TABLE BlogContent(
+    blog INTEGER NOT NULL REFERENCES Blogs(id),
+    id INTEGER NOT NULL,
 );
 CREATE TABLE Makers(
     id INTEGER NOT NULL PRIMARY KEY,
