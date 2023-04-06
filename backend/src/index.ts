@@ -3,7 +3,7 @@ import fs from 'fs';
 import sqlite3 from 'sqlite3';
 
 const app = express();
-const port: number = 3000;
+const port = 3000;
 
 let db = new sqlite3.Database('db.db', sqlite3.OPEN_READWRITE, (err) => {
     if (err) {
@@ -39,6 +39,27 @@ class Maker {
     user: number;
 }
 
+class Comment {
+    id: number;
+    author: number;
+    sub: number;
+    content: string;
+}
+
+class Replies {
+    id: number;
+    author: number;
+    comment: number;
+    content: string;
+}
+
+class Friendship {
+    id: number;
+    user1: number;
+    user2: number;
+    accepted: boolean;
+}
+
 
 app.use(express.json());
 app.use(
@@ -48,19 +69,19 @@ app.use(
 )
 
 app.post('/signup', (req, res) => {
-    let username = req.body.username;
-    let password = req.body.password;
+    const username = req.body.username;
+    const password = req.body.password;
 
     db.exec(`INSERT INTO Users (username, password, pfp) VALUES ("${username}", "${password}", "")`)
     res.sendStatus(201);
 })
 
 app.post('/login', (req, res) => {
-    let username = req.body.username;
-    let password = req.body.password;
+    const username = req.body.username;
+    const password = req.body.password;
 
     db.all<User>(`SELECT * FROM Users WHERE username = "${username}"`, [], (error, rows) => {
-        for (let row of rows) {
+        for (const row of rows) {
             if (row.password == password) {
                 return res.send('Ok!');
             }
@@ -70,7 +91,7 @@ app.post('/login', (req, res) => {
 })
 
 app.get('/followers', (req, res) => {
-    let user = req.body.user;
+    const user = req.body.user;
 
     db.all(`SELECT * FROM Followers WHERE maker = "${user}"`, [], (error, rows) => {
         res.send(rows.length);
@@ -78,7 +99,7 @@ app.get('/followers', (req, res) => {
 })
 
 app.get('/following', (req, res) => {
-    let user = req.body.user;
+    const user = req.body.user;
 
     db.all<Following>(`SELECT * FROM Followings WHERE user = "${user}"`, [], (error, rows) => {
         let following: Maker[] = []
@@ -101,6 +122,46 @@ app.post('/following', (req, res) => {
             return res.sendStatus(500)
         }
         res.sendStatus(201);
+    })
+})
+
+app.get('/friends', (req, res) => {
+    let user = req.body.user;
+
+    db.all<Friendship>(`SELECT * FROM Friends WHERE user = ${user}`, (err, rows) => {
+        let friends: {friend: number, user: User}[]
+
+        for (let row of rows) {
+            db.all<User>(`SELECT * FROM Users WHERE id = ${row.user2}`, (err, users) => {
+                friends.push({friend: row.id, user: users[0]})
+            })
+        }
+        res.send(friends)
+    })
+})
+
+app.post('/friends', (req, res) => {
+    let user1 = req.body.user1;
+    let user2 = req.body.user2;
+
+    db.exec(`INSERT INTO Friends (user1, user2, accepted) VALUES (${user1}, ${user2}, false)`, (err) => {
+        if (err) {
+            console.log(err)
+            return res.sendStatus(500)
+        }
+        res.sendStatus(201);
+    })
+})
+
+app.post('/accept', (req, res) => {
+    let id = req.body.id;
+
+    db.exec(`UPDATE Friends SET accepted = true WHERE id = ${id}`, (err) => {
+        if (err) {
+            console.log(err)
+            return res.sendStatus(500)
+        }
+        res.sendStatus(200);
     })
 })
 

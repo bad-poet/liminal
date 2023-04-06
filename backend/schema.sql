@@ -1,5 +1,6 @@
 CREATE TABLE Replies(
     id INTEGER NOT NULL PRIMARY KEY,
+    author INTEGER NOT NULL REFERENCES Users(id)
     comment INTEGER NOT NULL REFERENCES Comments(id),
     content TEXT NOT NULL
 );
@@ -39,4 +40,10 @@ CREATE TABLE Makers(
 CREATE TABLE Followings(
     maker INTEGER NOT NULL REFERENCES Makers(id),
     user INTEGER NOT NULL REFERENCES Users(id)
+)
+CREATE TABLE Friends(
+    id INTEGER NOT NULL PRIMARY KEY,
+    user1 INTEGER NOT NULL REFERENCES Users(id),
+    user2 INTEGER NOT NULL REFERENCES Users(id),
+    accepted BOOLEAN NOT NULL
 )
