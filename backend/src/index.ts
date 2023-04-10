@@ -1,3 +1,5 @@
+import * as mysql from 'mysql';
+
 import express from "express";
 import fs from 'fs';
 import sqlite3 from 'sqlite3';
@@ -84,7 +86,9 @@ app.post('/signup', (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
 
-    db.exec(`INSERT INTO Users (username, password, pfp) VALUES ("${username}", "${password}", "")`)
+    let statement = mysql.format('INSERT INTO Users (username, password, pfp) VALUES ("?", "?", "")', [username,password]);
+
+    db.exec(statement)
     res.sendStatus(201);
 })
 
@@ -92,7 +96,9 @@ app.post('/login', (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
 
-    db.all<User>(`SELECT * FROM Users WHERE username = "${username}"`, [], (error, rows) => {
+    let statement = mysql.format('SELECT * FROM Users WHERE username = "?"', [username])
+
+    db.all<User>(statement, [], (error, rows) => {
         for (const row of rows) {
             if (row.password == password) {
                 return res.send('Ok!');
@@ -105,7 +111,9 @@ app.post('/login', (req, res) => {
 app.get('/followers', (req, res) => {
     const user = req.body.user;
 
-    db.all(`SELECT * FROM Followers WHERE maker = "${user}"`, [], (error, rows) => {
+    let statement = mysql.format('SELECT * FROM Followers WHERE maker = "?"', [user])
+
+    db.all(statement, [], (error, rows) => {
         res.send(rows.length);
     })
 })
@@ -113,7 +121,9 @@ app.get('/followers', (req, res) => {
 app.get('/following', (req, res) => {
     const user = req.body.user;
 
-    db.all<Following>(`SELECT * FROM Followings WHERE user = "${user}"`, [], (error, rows) => {
+    let statement = mysql.format('SELECT * FROM Followings WHERE user = "?"', [user]);
+
+    db.all<Following>(statement, [], (error, rows) => {
         let following: Maker[] = []
         for (let row of rows) {
             db.all<Maker>(`SELECT * FROM Makers WHERE id = ${row.maker}`, [], (error, makers) => {
@@ -128,7 +138,9 @@ app.post('/following', (req, res) => {
     let user = req.body.user;
     let maker = req.body.maker;
 
-    db.exec(`INSERT INTO Followings (user, maker) VALUES (${user}, ${maker})`, (err) => {
+    let statement = mysql.format('INSERT INTO Followings (user, maker) VALUES (?, ?)', [user, maker])
+
+    db.exec(statement, (err) => {
         if (err) {
             console.log(err)
             return res.sendStatus(500)
@@ -140,7 +152,9 @@ app.post('/following', (req, res) => {
 app.get('/friends', (req, res) => {
     let user = req.body.user;
 
-    db.all<Friendship>(`SELECT * FROM Friends WHERE user = ${user}`, (err, rows) => {
+    let statement = mysql.format("SELECT * FROM Friends WHERE user = ?", [user]);
+
+    db.all<Friendship>(statement, (err, rows) => {
         let friends: {friend: number, user: User}[]
 
         for (let row of rows) {
@@ -156,7 +170,9 @@ app.post('/friends', (req, res) => {
     let user1 = req.body.user1;
     let user2 = req.body.user2;
 
-    db.exec(`INSERT INTO Friends (user1, user2, accepted) VALUES (${user1}, ${user2}, false)`, (err) => {
+    let statement = mysql.format("INSERT INTO Friends (user1, user2, accepted) VALUES (?, ?, false)", [user1, user2])
+
+    db.exec(statement, (err) => {
         if (err) {
             console.log(err)
             return res.sendStatus(500)
@@ -168,7 +184,9 @@ app.post('/friends', (req, res) => {
 app.post('/accept', (req, res) => {
     let id = req.body.id;
 
-    db.exec(`UPDATE Friends SET accepted = true WHERE id = ${id}`, (err) => {
+    let statement = mysql.format("UPDATE Friends SET accepted = true WHERE id = ?", [id])
+
+    db.exec(statement, (err) => {
         if (err) {
             console.log(err)
             return res.sendStatus(500)
@@ -177,7 +195,27 @@ app.post('/accept', (req, res) => {
     })
 })
 
-app.get('')
+app.get('/comments', (req, res) => {
+    db.all<Comment>(`SELECT * FROM Comments`, [], (error, rows) => {
+        res.send(rows)
+    })
+})
+
+app.post('/comments', (req, res) => {
+    let author = req.body.author;
+    let sub = req.body.sub;
+    let content = req.body.content;
+
+    let statement = mysql.format(`INSERT INTO Comments (author, sub, content) VALUES (?, ?, ?)`, [author, sub, content])
+
+    db.exec(statement, (err) => {
+        if (err) {
+            console.log(err);
+            return res.sendStatus(500);
+        }
+        res.sendStatus(201);
+    })
+})
 
 app.get('/liminals', (req, res) => {
     db.all<Liminal>(`SELECT * FROM Content`, [], (error, rows) => {
@@ -186,7 +224,10 @@ app.get('/liminals', (req, res) => {
 })
 
 app.get('/liminals/:id', (req, res) => {
-    db.all<Liminal>(`SELECT * FROM Content WHERE id = "${req.params.id}"`, [], (error, rows) => {
+
+    let statement = mysql.format(`SELECT * FROM Content WHERE id = ?`, [req.params.id])
+
+    db.all<Liminal>(statement, [], (error, rows) => {
         res.send(rows[0])
     })
 })
@@ -198,7 +239,9 @@ app.post('/liminals', (req, res) => {
     let description = req.body.description;
     let author = req.body.author;
 
-    db.exec(`INSERT INTO Content (author, name, video, audio, description) VALUES (${author}, "${name}", "${video}", "${audio}", "${description}")`, (err) => {
+    let statement = mysql.format(`INSERT INTO Content (author, name, video, audio, description) VALUES (?, ?, ?, ?, ?)`, [author, name, video, audio, description])
+
+    db.exec(statement, (err) => {
         if (err) {
             console.log(err);
             return res.sendStatus(500);
